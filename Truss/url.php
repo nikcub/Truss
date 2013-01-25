@@ -19,7 +19,9 @@ class Url {
   protected $qs_components;
   protected $path_components;
 
-
+  private $filter_qs_key = "/^[a-zA-Z0-9_\.-]+$/i";
+  private $filter_qs_val = "/^[a-zA-Z0-9:_\.\/-]+$/i";
+  private $filter_path = "/^[a-zA-Z0-9:_\.-]+$/i";
 
   public function __construct($url=null) {
     if(!$url) {
@@ -57,6 +59,46 @@ class Url {
   	return $tmp_url;
   }
 
+
+
+  protected function _assemble() {
+  	$clean = '';
+  	$clean .= $this->scheme;
+  	$clean .= '://';
+  	$clean .= $this->host;
+  	$clean .= $this->_assemble_path();
+  	if($this->query) {
+  		$clean .= '?';
+	  	$clean .= $this->_assemble_query();
+  	}
+  	$this->url = $clean;
+  
+  }
+
+  protected function _assemble_path() {
+  	$tmp_path = '';
+  	if(sizeof($this->path_components) > 0) {
+  		foreach($this->path_components as $pc) {
+  			$tmp_path .= $pc . '/';
+  		}
+  		$tmp_path = rtrim($tmp_path, '/');
+  		return '/'.$tmp_path;
+  	}
+  }
+  protected function _assemble_query() {
+  	if(sizeof($this->qs_components) == 0) {
+  		return '';
+  	}
+  	$qs = '';
+  	foreach($this->qs_components as $ck => $cv) {
+  		$qs .= $ck;
+  		if($cv) 
+  			$qs .= '='.$cv;
+  	}
+  	return $qs;
+  }
+
+
   protected function _parse($url) {
   	$this->url_raw = $url;
 
@@ -75,40 +117,35 @@ class Url {
   	$this->_assemble();
   }
 
-  protected function _assemble() {
-  	$clean = '';
-  	$clean .= $this->scheme;
-  	$clean .= '://';
-  	$clean .= $this->host;
-  	if(substr($this->path, 0, 1) !== '/')
-	  	$clean .= '/';
-  	$clean .= $this->path;
-  	if($this->query) {
-  		$clean .= '?';
-	  	$clean .= $this->query;
-  	}
-  	$this->url = $clean;
-  
-  }
-
   protected function _parse_path() {
   	if(strlen(trim($this->path, '/')) > 0) {
+  		$tmp_arr = array();
   		$pc = array();
   		$pc = explode('/', trim($this->path, '/'));
-  		$this->path_components = $pc;
+  		foreach($pc as $c) {
+			if(preg_match($this->filter_path, $c)) {
+				$tmp_arr[] = $c;
+			}
+  		}
+  		if(sizeof($tmp_arr) > 0)
+	  		$this->path_components = $tmp_arr;
   	} 
   }
 
   protected function _parse_components() {
   	if($this->query) {
-  		$qc = array();
+  		$query_components = array();
   		$qc = explode('&', $this->query);
   		foreach($qc as $qv) {
   			if(strstr($qv, '=') !== false) {
   				$qt = explode('=', $qv, 2);
-  				$query_components[$qt[0]] = $qt[1];
+	  			if(preg_match($this->filter_qs_key, $qt[0]) && preg_match($this->filter_qs_val, $qt[1])) {
+	          		$query_components[$qt[0]] = $qt[1];
+	        	}
   			} else {
-  				$query_components[$qv] = '';
+				if(preg_match($this->filter_qs_key, $qv)) {
+	  				$query_components[$qv] = '';
+	  			}
   			}
   		}
   		$this->qs_components = $query_components;
