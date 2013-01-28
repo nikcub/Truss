@@ -15,7 +15,10 @@ class Router {
     
     if($request instanceof Request) {
       $this->attach_request($request);
+    } else {
+      $this->attach_request(new Request());
     }
+
     $this->debug = $debug;
   }
   
@@ -28,7 +31,9 @@ class Router {
   protected function attach_request($request) {
     if($request instanceof Request) {
       $this->request = $request;
+      return true;
     }
+    throw new Router_Exception('Need request');
   }
   
   public function compile_route($pattern) {
@@ -65,7 +70,7 @@ class Router {
   }
   
   protected function match_route() {
-    $_path = $this->request->path or '/';
+    $_path = $this->request->url->path or '/';
     $matches = array();
     
     if(in_array($_path, $this->routes)) {
@@ -109,8 +114,8 @@ class Router {
         $ret = 1;
       }
     } else {
-      $ret = new View('404');
-      // throw new NotFound();
+      // $ret = new View('404');
+      throw new NotFound();
     }
     
     return $ret;
