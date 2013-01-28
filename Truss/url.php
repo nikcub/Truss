@@ -12,7 +12,7 @@ class Url {
   protected $pass;
   protected $host;
   protected $port;
-  protected $path;
+  public $path;
   protected $query;
   protected $fragment;
 
@@ -34,6 +34,11 @@ class Url {
     $this->_parse(urldecode($url));
   }
   
+  public function has_qs() {
+  	return (sizeof($this->qs_components) > 0);
+  }
+
+  // @TODO take these server variables out of this object. use a factory to construct self request url
   protected function request_url() {
   	$tmp_url = '';
   	if(isset($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] == 'on') {
@@ -58,8 +63,6 @@ class Url {
   	}
   	return $tmp_url;
   }
-
-
 
   protected function _assemble() {
   	$clean = '';
